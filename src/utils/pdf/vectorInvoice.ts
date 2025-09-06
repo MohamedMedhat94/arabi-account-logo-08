@@ -270,16 +270,14 @@ export async function generateInvoicePDFVector(data: VectorInvoiceData) {
   // Get position after table
   const finalY = (doc as any).lastAutoTable.finalY + 5;
 
-  // TOTALS AND PAYMENT TERMS SECTION - Side by side layout for Proforma
+  // TOTALS AND PAYMENT TERMS SECTION - Fixed layout for proper positioning
   let totalsY = finalY + 8;
-  const totalsWidth = isProforma ? 85 : 85;
-  const totalsX = isProforma ? pageWidth - margin - totalsWidth : pageWidth - margin - totalsWidth;
   
   // For proforma invoices, create payment terms section next to totals
   if (isProforma && (invoiceData.paymentTerms || invoiceData.bankName || invoiceData.remarks)) {
     const paymentTermsWidth = 95;
     const paymentTermsX = margin;
-    const sectionHeight = 50; // Increased height to accommodate more content
+    const sectionHeight = 50;
     
     // Payment terms section (left side)
     doc.setFillColor(248, 248, 248);
@@ -351,11 +349,10 @@ export async function generateInvoicePDFVector(data: VectorInvoiceData) {
       doc.text(remarksLines, paymentTermsX + 5, contentY);
     }
     
-    // Update totals position for side-by-side layout
+    // Totals section (right side) - fixed positioning
     const adjustedTotalsX = paymentTermsX + paymentTermsWidth + 10;
     const adjustedTotalsWidth = pageWidth - margin - adjustedTotalsX;
     
-    // Totals section with border (right side)
     doc.setFillColor(245, 245, 245);
     doc.rect(adjustedTotalsX, totalsY, adjustedTotalsWidth, 35, 'F');
     doc.setDrawColor(0, 0, 0);
@@ -387,10 +384,13 @@ export async function generateInvoicePDFVector(data: VectorInvoiceData) {
     doc.text(`NET TOTAL:`, adjustedTotalsX + 3, totalsY + 31);
     doc.text(`${invoiceData.currencySymbol}${invoiceData.netTotal.toFixed(2)}`, adjustedTotalsX + adjustedTotalsWidth - 3, totalsY + 31, { align: 'right' });
     
-    // Update signature position
-    totalsY = totalsY + Math.max(sectionHeight, 35);
+    // Update totalsY for next section - use the maximum height of both sections
+    totalsY = totalsY + Math.max(sectionHeight, 35) + 10;
   } else {
-    // Original totals section for commercial invoices or proforma without payment terms
+    // Totals section for commercial invoices - positioned properly to avoid overlap
+    const totalsWidth = 85;
+    const totalsX = pageWidth - margin - totalsWidth;
+    
     doc.setFillColor(245, 245, 245);
     doc.rect(totalsX, totalsY, totalsWidth, 35, 'F');
     doc.setDrawColor(0, 0, 0);
@@ -421,10 +421,13 @@ export async function generateInvoicePDFVector(data: VectorInvoiceData) {
     doc.setFontSize(10);
     doc.text(`NET TOTAL:`, totalsX + 3, totalsY + 31);
     doc.text(`${invoiceData.currencySymbol}${invoiceData.netTotal.toFixed(2)}`, totalsX + totalsWidth - 3, totalsY + 31, { align: 'right' });
+    
+    // Update totalsY for next section
+    totalsY = totalsY + 35 + 10;
   }
 
   // SIGNATURE SECTION - Compact and organized seller block
-  const signatureY = totalsY + 15;
+  const signatureY = totalsY;
   const signatureWidth = pageWidth - 2 * margin;
   const signatureHeight = 28; // Further reduced for compactness
   
